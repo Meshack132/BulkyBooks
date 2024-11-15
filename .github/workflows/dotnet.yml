@@ -1,0 +1,61 @@
+name: .NET CI/CD Workflow with Linting
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Setup .NET environment
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.x' # Update based on your project’s requirements
+
+      # Step 3: Restore dependencies
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # Step 4: Build the solution
+      - name: Build solution
+        run: dotnet build --no-restore --configuration Release
+
+      # Step 5: Run unit tests
+      - name: Run unit tests
+        run: dotnet test --no-build --verbosity normal
+
+      # Step 6: Setup Deno for linting
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x # Adjust version as needed
+
+      # Step 7: Lint code
+      - name: Run Deno lint
+        run: |
+          echo "wwwroot/lib/" > .denoignore # Exclude third-party libraries
+          deno lint
+
+      # Step 8: Publish application (optional)
+      - name: Publish application
+        run: dotnet publish --configuration Release --output ./publish
+
+      # Step 9: Upload build artifacts
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v3
+        with:
+          name: dotnet-app
+          path: ./publish
