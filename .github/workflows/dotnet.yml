@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest # Use Windows if Windows-specific steps are needed
+    runs-on: ubuntu-latest # Use Windows if necessary for the project
 
     steps:
       # Step 1: Checkout repository
@@ -22,19 +22,19 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '7.x' # Update to match BulkyBooks project version
+          dotnet-version: '7.x' # Adjust version based on project
 
       # Step 3: Restore dependencies
       - name: Restore dependencies
-        run: dotnet restore BulkyBookWeb.sln
+        run: dotnet restore BulkyBooks.sln
 
       # Step 4: Build solution
       - name: Build solution
-        run: dotnet build BulkyBookWeb.sln --no-restore --configuration Release
+        run: dotnet build BulkyBooks.sln --no-restore --configuration Release
 
       # Step 5: Run unit tests
       - name: Run tests
-        run: dotnet test BulkyBookWeb.sln --no-build --verbosity normal
+        run: dotnet test BulkyBooks.sln --no-build --verbosity normal
 
       # Step 6: Publish application
       - name: Publish application
