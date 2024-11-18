@@ -5,46 +5,38 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+    tags:
+      - 'v*' # Trigger on versioned tags like v1.0.0
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      # Step 1: Checkout the repository code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Setup .NET SDK
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '6.x' # Targeting .NET 6
+          dotnet-version: '6.x'
 
-      # Step 3: Restore dependencies
       - name: Restore Dependencies
         run: dotnet restore
-        shell: pwsh # Explicitly setting shell for Windows compatibility
+        shell: pwsh
 
-      # Step 4: Build the solution
       - name: Build Solution
         run: dotnet build --configuration Release --no-restore
         shell: pwsh
 
-      # Step 5: Run tests (if applicable)
       - name: Run Tests
         run: dotnet test --no-build --verbosity normal
         shell: pwsh
 
-      # Step 6: Package application
       - name: Publish Application
         run: dotnet publish -c Release -o ./output
         shell: pwsh
 
-      # Step 7: Upload build artifacts
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -54,9 +46,12 @@ jobs:
   release:
     needs: build
     runs-on: windows-latest
-    if: github.ref == 'refs/heads/main'
+    if: startsWith(github.ref, 'refs/tags/v') # Run for versioned tags
 
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
       - name: Download Build Artifacts
         uses: actions/download-artifact@v3
         with:
@@ -67,9 +62,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ github.run_number }}
-          release_name: "Release v${{ github.run_number }}"
-          body: "Automated release for build ${{ github.run_number }}"
+          tag_name: ${{ github.ref_name }}
+          release_name: "Release ${{ github.ref_name }}"
+          body: "Automated release for build ${{ github.ref_name }}"
           draft: false
           prerelease: false
           files: ./output/*
