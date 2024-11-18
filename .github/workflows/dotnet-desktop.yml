@@ -1,0 +1,70 @@
+name: Build and Publish .NET Desktop App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      # Checkout the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Setup .NET SDK
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.x' # Adjust version to your target .NET version
+
+      # Restore dependencies
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      # Build the solution
+      - name: Build Solution
+        run: dotnet build --configuration Release --no-restore
+
+      # Run tests (if applicable)
+      - name: Run Tests
+        run: dotnet test --no-build --verbosity normal
+
+      # Package application
+      - name: Publish Application
+        run: dotnet publish -c Release -o ./output
+
+      # Upload build artifacts for release
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: application-build
+          path: ./output
+
+  release:
+    needs: build
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/main' && startsWith(github.event.head_commit.message, 'release:')
+
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: application-build
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: "Release v${{ github.run_number }}"
+          body: "Automated release for build ${{ github.run_number }}"
+          draft: false
+          prerelease: false
+          files: ./output/*
